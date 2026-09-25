@@ -21,7 +21,7 @@ def get_my_team(league, team_id):
 def player_row(p):
     return {
         "player_id": p.playerId, "name": p.name, "position": p.position,
-        "nfl_team": p.proTeam, "injury_status": p.injuryStatus,
+        "nfl_team": p.proTeam, "injury_status":None if isinstance(p.injuryStatus, list) else p.injuryStatus,
         "pct_owned": p.percent_owned, "pct_started": p.percent_started,
         "total_points": p.total_points, "avg_points": p.avg_points,
         "proj_total": p.projected_total_points, "proj_avg": p.projected_avg_points,
@@ -120,13 +120,26 @@ if __name__ == "__main__":
             .to_string(index=False))
 
     # Loading data to Snowflake
+    print("\nSeason totals rows:", len(totals_df))
+    print("Projection rows:", len(proj_df))
+    print(proj_df[proj_df.name.isin(["Travis Etienne Jr.", "J.K. Dobbins", "Braelon Allen"])]
+            .to_string(index=False))
+
+
+    print("\nINJURY_STATUS types:")
+    print(players_df["injury_status"].apply(type).value_counts())
+
+    print("\nNon-string injury statuses:")
+    print(
+        players_df[
+            players_df["injury_status"].apply(lambda x: not isinstance(x, str))
+        ][["player_id", "name", "injury_status"]].to_string(index=False)
+    )
+
     conn = get_conn()
     load_df(conn, players_df, "players")
     load_df(conn, stats_df, "player_stats")
     load_df(conn, totals_df, "season_totals")
-
-
-
     proj_df["pulled_at"] = pd.Timestamp.now(tz="UTC").tz_localize(None)
     load_df(conn, proj_df, "projections", mode="append")   # keep every snapshot
     conn.close()
