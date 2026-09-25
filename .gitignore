@@ -9,3 +9,4 @@ __pycache__/
 
 # Configuration / credentials
 config/parameters.json
+config/snowflake.json

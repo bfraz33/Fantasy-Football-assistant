@@ -1,6 +1,7 @@
 import json
 import pandas as pd
 from espn_api.football import League
+from db import get_conn, load_df
 
 #Loading parameter credentials
 def load_config(path="config/parameters.json"):
@@ -117,4 +118,16 @@ if __name__ == "__main__":
     print("Projection rows:", len(proj_df))
     print(proj_df[proj_df.name.isin(["Travis Etienne Jr.", "J.K. Dobbins", "Braelon Allen"])]
             .to_string(index=False))
+
+    # Loading data to Snowflake
+    conn = get_conn()
+    load_df(conn, players_df, "players")
+    load_df(conn, stats_df, "player_stats")
+    load_df(conn, totals_df, "season_totals")
+
+
+
+    proj_df["pulled_at"] = pd.Timestamp.now(tz="UTC").tz_localize(None)
+    load_df(conn, proj_df, "projections", mode="append")   # keep every snapshot
+    conn.close()
 
